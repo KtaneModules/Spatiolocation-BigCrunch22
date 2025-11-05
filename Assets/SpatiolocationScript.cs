@@ -21,7 +21,7 @@ public class SpatiolocationScript : MonoBehaviour
 	public MeshRenderer Background;
 	public GameObject AllTheButtons;
 	
-	int[] Coordinates = new int[4], Rotations = new int[3], Key = new int[4], Exit = new int[4];
+	int[] Coordinates = new int[4], Key = new int[4], Exit = new int[4];
 	
 	string[,,,] MazeGenerated = new string[8,8,8,8];
 	string[,,,] ConnectionsGenerated = new string[8,8,8,8];
@@ -29,6 +29,7 @@ public class SpatiolocationScript : MonoBehaviour
 	static int Symmetry = 3;
 	int MazeRow = Symmetry, MazeColumn = Symmetry, MazeFloor = Symmetry, MazeTimeline = Symmetry; 
 	int ForcedSteps = 50000; string CurrentOrientation = "-X"; bool HoldingKey = false;
+	string RightAxis = "+Y", UpAxis = "-Z", AnaAxis = "-W";
 	Coroutine HoldCheckCoroutine;
 	int Loop = 0;
 	
@@ -287,10 +288,6 @@ public class SpatiolocationScript : MonoBehaviour
 	
 	void CoordinateGeneration()
 	{
-		for (int f = 0; f < 3; f++)
-		{
-			Rotations[f] = UnityEngine.Random.Range(0,4);
-		}
 		Coordinates = new int[4] {0,0,0,0};
 		Redo:
 		int[,] GivenImportantCoordinates = new int[2,4];
@@ -325,7 +322,11 @@ public class SpatiolocationScript : MonoBehaviour
 			}
 		}
 		
-		CurrentOrientation = GiveOrientation(Rotations);
+		for (int x = 0; x < 1000; x++)
+		{
+			CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, UnityEngine.Random.Range(0,3), (UnityEngine.Random.Range(0,2) == 0 ? true : false));
+		}
+		
 		for (int x = 0; x < 4; x++)
 		{
 			Key[x] = GivenImportantCoordinates[0,x];
@@ -337,7 +338,7 @@ public class SpatiolocationScript : MonoBehaviour
 		Debug.LogFormat("[Spatiolocation #{0}] Exit Location: ({1},{2},{3},{4})", moduleId, GivenImportantCoordinates[1,0], GivenImportantCoordinates[1,1], GivenImportantCoordinates[1,2], GivenImportantCoordinates[1,3]);
 		Debug.LogFormat("[Spatiolocation #{0}] ----------------------------------------------------", moduleId);
 		Debug.LogFormat("[Spatiolocation #{0}] ----------------------------------------------------", moduleId);
-		Debug.LogFormat("[Spatiolocation #{0}] Current Location: ({1},{2},{3},{4}) + Current Orientation: {5}{6}{7} ({8})", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], Rotations[0], Rotations[1], Rotations[2], CurrentOrientation);
+		Debug.LogFormat("[Spatiolocation #{0}] Current Location: ({1},{2},{3},{4}) + Current Orientation: {8} [Right/Left:{5}, Up/Down:{6}, Ana/Cata:{7}]", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], RightAxis[1], UpAxis[1], AnaAxis[1], CurrentOrientation);
 	}
 	
 	void ArrowRotation(int Number)
@@ -351,33 +352,32 @@ public class SpatiolocationScript : MonoBehaviour
 		{
 			case 0:
 				Moved = "left";
-				Rotations[2] = ((Rotations[2]-1)+4)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 0, false);
 				break;
 			case 1:
 				Moved = "right";
-				Rotations[2] = (Rotations[2]+1)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 0, true);
 				break;
 			case 2:
 				Moved = "up";
-				Rotations[1] = ((Rotations[1]-1)+4)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 1, true);
 				break;
 			case 3:
 				Moved = "down";
-				Rotations[1] = (Rotations[1]+1)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 1, false);
 				break;
 			case 4:
 				Moved = "towards ana";
-				Rotations[0] = ((Rotations[0]-1)+4)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 2, true);
 				break;
 			case 5:
 				Moved = "towards cata";
-				Rotations[0] = (Rotations[0]+1)%4;
+				CurrentOrientation = GiveCurrentOrientation(CurrentOrientation, 2, false);
 				break;
 			default:
 				break;
 		}
-		CurrentOrientation = GiveOrientation(Rotations);
-		Debug.LogFormat("[Spatiolocation #{0}] You rotated {1} relative to original orientation (000 [-X]). Current Location: ({2},{3},{4},{5}) + Current Orientation: {6}{7}{8} ({9})", moduleId, Moved, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], Rotations[0], Rotations[1], Rotations[2], CurrentOrientation);
+		Debug.LogFormat("[Spatiolocation #{0}] You rotated {1} relative to current orientation. Current Location: ({2},{3},{4},{5}) + Current Orientation: {9} [Right/Left:{6}, Up/Down:{7}, Ana/Cata:{8}]", moduleId, Moved, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], RightAxis[1], UpAxis[1], AnaAxis[1], CurrentOrientation);
 	}
 	
 	void MoveForward()
@@ -419,13 +419,13 @@ public class SpatiolocationScript : MonoBehaviour
 				default:
 					break;
 			}
-			Debug.LogFormat("[Spatiolocation #{0}] You move towards that direction successfully. Current Location: ({1},{2},{3},{4}) + Current Orientation: {5}{6}{7} ({8})", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], Rotations[0], Rotations[1], Rotations[2], CurrentOrientation);
+			Debug.LogFormat("[Spatiolocation #{0}] You move towards that direction successfully. Current Location: ({1},{2},{3},{4}) + Current Orientation: {8} [Right/Left:{5}, Up/Down:{6}, Ana/Cata:{7}]", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], RightAxis[1], UpAxis[1], AnaAxis[1], CurrentOrientation);
 		}
 		
 		else
 		{
 			Module.HandleStrike();
-			Debug.LogFormat("[Spatiolocation #{0}] You hit a wall while trying to move towards that direction. Current Location: ({1},{2},{3},{4}) + Current Orientation: {5}{6}{7} ({8})", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], Rotations[0], Rotations[1], Rotations[2], CurrentOrientation);
+			Debug.LogFormat("[Spatiolocation #{0}] You hit a wall while trying to move towards that direction. Current Location: ({1},{2},{3},{4}) + Current Orientation: {8} [Right/Left:{5}, Up/Down:{6}, Ana/Cata:{7}]", moduleId, Coordinates[0], Coordinates[1], Coordinates[2], Coordinates[3], RightAxis[1], UpAxis[1], AnaAxis[1], CurrentOrientation);
 		}
 	}
 	
@@ -563,44 +563,53 @@ public class SpatiolocationScript : MonoBehaviour
 		}
 	}
 	
-	string GiveOrientation(int[] rotationNumbers)
+	string GiveCurrentOrientation(string Forward, int Direction, bool Clockwise)
 	{
-		if (rotationNumbers.Length != 3)
-			return "";
-
 		Dictionary<string, string[]> cycles = new Dictionary<string, string[]>()
 		{
 			{ "XY", new[] {"-X", "+Y", "+X", "-Y"} },
+			{ "YX", new[] {"-X", "+Y", "+X", "-Y"} },
 			{ "XZ", new[] {"-X", "-Z", "+X", "+Z"} },
+			{ "ZX", new[] {"-X", "-Z", "+X", "+Z"} },
 			{ "XW", new[] {"-X", "-W", "+X", "+W"} },
+			{ "WX", new[] {"-X", "-W", "+X", "+W"} },
 			{ "YZ", new[] {"+Y", "+Z", "-Y", "-Z"} },
+			{ "ZY", new[] {"+Y", "+Z", "-Y", "-Z"} },
 			{ "YW", new[] {"+Y", "+W", "-Y", "-W"} },
-			{ "ZW", new[] {"+Z", "+W", "-Z", "-W"} }
+			{ "WY", new[] {"+Y", "+W", "-Y", "-W"} },
+			{ "ZW", new[] {"+Z", "+W", "-Z", "-W"} },
+			{ "WZ", new[] {"+Z", "+W", "-Z", "-W"} }
 		};
-
-		string temp = cycles["XW"][rotationNumbers[0] % 4];
-
-		char axis = temp[1];
-		if (axis == 'X')
+		
+		string AxisPartner = "", CurrentForward = Forward;
+		switch (Direction)
 		{
-			temp = cycles["XZ"][(Array.IndexOf(cycles["XZ"], temp) + rotationNumbers[1]) % 4];
-			axis = temp[1];
-			if (axis == 'X')
-				temp = cycles["XY"][(Array.IndexOf(cycles["XY"], temp) + rotationNumbers[2]) % 4];
-			else if (axis == 'Z')
-				temp = cycles["YZ"][(Array.IndexOf(cycles["YZ"], temp) + rotationNumbers[2]) % 4];
+			case 0:
+				AxisPartner = RightAxis;
+				break;
+			case 1:
+				AxisPartner = UpAxis;
+				break;
+			case 2:
+				AxisPartner = AnaAxis;
+				break;
 		}
-		else if (axis == 'W')
+		
+		Forward = cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()][(Array.IndexOf(cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()], CurrentForward)+(Clockwise?1:3))%4];
+		switch (Direction)
 		{
-			temp = cycles["ZW"][(Array.IndexOf(cycles["ZW"], temp) + rotationNumbers[1]) % 4];
-			axis = temp[1];
-			if (axis == 'W')
-				temp = cycles["YW"][(Array.IndexOf(cycles["YW"], temp) + rotationNumbers[2]) % 4];
-			else if (axis == 'Z')
-				temp = cycles["YZ"][(Array.IndexOf(cycles["YZ"], temp) + rotationNumbers[2]) % 4];
+			case 0:
+				RightAxis = cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()][(Array.IndexOf(cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()], CurrentForward)+(Clockwise?2:4))%4];
+				break;
+			case 1:
+				UpAxis = cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()][(Array.IndexOf(cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()], CurrentForward)+(Clockwise?2:4))%4];
+				break;
+			case 2:
+				AnaAxis = cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()][(Array.IndexOf(cycles[CurrentForward[1].ToString()+AxisPartner[1].ToString()], CurrentForward)+(Clockwise?2:4))%4];
+				break;
 		}
-
-		return temp;
+		
+		return Forward;
 	}
 	
 #pragma warning disable 414
